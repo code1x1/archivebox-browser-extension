@@ -1,9 +1,12 @@
-import "bootstrap";
 import { initializeSnapshotsTab } from './snapshots-tab';
 import { initializeImport } from './import-tab';
 import { initializePersonasTab } from './personas-tab';
 import { initializeCookiesTab } from './cookies-tab';
 import { initializeConfigTab } from './config-tab';
+// CSS
+import 'bootstrap/dist/css/bootstrap.min.css'
+// Optional JS (needs Popper for tooltips/dropdowns)
+import 'bootstrap'
 
 // Initialize all tabs when options page loads
 document.addEventListener('DOMContentLoaded', () => {
