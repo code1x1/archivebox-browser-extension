@@ -1,4 +1,4 @@
-import { filterSnapshots, addToArchiveBox, downloadCsv, downloadJson, updateStatusIndicator, getArchiveBoxServerUrl } from './utils.js';
+import { filterSnapshots, addToArchiveBox, downloadCsv, downloadJson, updateStatusIndicator, getArchiveBoxServerUrl } from './utils';
 
 export function initializeSnapshotsTab() {
   let selectedSnapshots = new Set();

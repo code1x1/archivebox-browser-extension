@@ -1,6 +1,6 @@
 // Config tab initialization and handlers
 
-import { Snapshot, updateStatusIndicator, getArchiveBoxServerUrl, addToArchiveBox } from './utils.js';
+import { Snapshot, updateStatusIndicator, getArchiveBoxServerUrl, addToArchiveBox } from './utils';
 
 export async function initializeConfigTab() {
   const configForm = document.getElementById('configForm');

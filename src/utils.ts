@@ -1,14 +1,13 @@
 // Common utility functions
 
 export class Snapshot {
-  constructor(url, tags = [], title = '', favIconUrl = null) {
-    this.id = crypto.randomUUID();
-    this.url = url;
-    this.timestamp = new Date().toISOString();
-    this.tags = tags;
-    this.title = title;
-    this.favIconUrl = favIconUrl;
-  }
+  constructor(
+  public id: string = crypto.randomUUID(),
+  public url: string ,
+  public timestamp: string  = new Date().toISOString(),
+  public tags: string[] = [],
+  public title: string = "",
+  public favIconUrl: string | null = null) {}
 }
 
 // Helper to get server URL with fallback to legacy config name

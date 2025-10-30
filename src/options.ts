@@ -1,8 +1,9 @@
-import { initializeSnapshotsTab } from './snapshots-tab.js';
-import { initializeImport } from './import-tab.js';
-import { initializePersonasTab } from './personas-tab.js';
-import { initializeCookiesTab } from './cookies-tab.js';
-import { initializeConfigTab } from './config-tab.js';
+import "bootstrap";
+import { initializeSnapshotsTab } from './snapshots-tab';
+import { initializeImport } from './import-tab';
+import { initializePersonasTab } from './personas-tab';
+import { initializeCookiesTab } from './cookies-tab';
+import { initializeConfigTab } from './config-tab';
 
 // Initialize all tabs when options page loads
 document.addEventListener('DOMContentLoaded', () => {
