@@ -6,7 +6,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "initialize": "yarn dlx @yarnpkg/sdks vscode vim"
+    "postinstall": "yarn dlx @yarnpkg/sdks vscode vim"
   },
   "devDependencies": {
     "typescript": "~5.9.3",
