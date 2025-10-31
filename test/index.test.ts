@@ -39,6 +39,10 @@ describe("test extension options page", () => {
         });
     })
 
+    afterAll(async () => {
+        await browser.close();
+    })
+
     it('go to options page', async () => {
         console.log('Extension ID:', extensionId);
         const page = await browser.newPage();
