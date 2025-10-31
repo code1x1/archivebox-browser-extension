@@ -1,55 +1,62 @@
 {
-  "manifest_version": 3,
-  "version": "2.1.5",
-  "name": "ArchiveBox",
-  "description": "Collect URLs and preserve them using a remote ArchiveBox server",
-  "permissions": [
-    "storage",
-    "scripting",
-    "activeTab",
-    "contextMenus",
-    "unlimitedStorage"
-  ],
-  "optional_permissions": [
-    "cookies",
-    "history",
-    "bookmarks",
-    "tabs"
-  ],
-  "optional_host_permissions": [
-    "<all_urls>"
-  ],
-  "icons": {
-    "16": "16.png",
-    "32": "32.png",
-    "48": "48.png",
-    "128": "128.png"
-  },
-  "action": {
-    "default_title": "Save to ArchiveBox",
-    "default_icon": {
-      "16": "16.png",
-      "32": "32.png",
-      "48": "48.png",
-      "128": "128.png"
+    "manifest_version": 3,
+    "version": "2.1.5",
+    "name": "ArchiveBox",
+    "description": "Collect URLs and preserve them using a remote ArchiveBox server",
+    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAufGpj0XRzrpjNrwaYUl8P/mYP4rHQbaiUgCfvFV1pouZHF8JcN5iNIbqcJVislJ/JXyeMnb9Bc52HYf8vrtuwnn3gRNWK3CxTO4e6QvJa4dgPWbDOHfh1IsT40XkybBT24M7xl98hQmSjuhHdrzE2Lyq//CfSFdC0cqg83ea0YMVWZwbXIq0GVB+Tm9Z36ZIi0pwp1/ogUP7SDzJowASZtyaBwVRzgcL8M7GPU2MkfNfZH4ylIRCO7xTrnuOtGrFfJld3+YLFVrwLMOUIjpV+jWrWpM9fBf+MNqz6/BOk8x2kZ0dpwkUvalMmsFmSUYmuJRFB2lhW9LNwZ2UJO0e/wIDAQAB",
+    "permissions": [
+        "storage",
+        "scripting",
+        "activeTab",
+        "contextMenus",
+        "unlimitedStorage"
+    ],
+    "optional_permissions": [
+        "cookies",
+        "history",
+        "bookmarks",
+        "tabs"
+    ],
+    "optional_host_permissions": [
+        "<all_urls>"
+    ],
+    "icons": {
+        "16": "16.png",
+        "32": "32.png",
+        "48": "48.png",
+        "128": "128.png"
+    },
+    "action": {
+        "default_title": "Save to ArchiveBox",
+        "default_icon": {
+            "16": "16.png",
+            "32": "32.png",
+            "48": "48.png",
+            "128": "128.png"
+        }
+    },
+    "options_page": "options.html",
+    "background": {
+        "service_worker": "background.js",
+        "type": "module"
+    },
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "popup.js"
+            ],
+            "matches": [
+                "*://*/*"
+            ]
+        }
+    ],
+    "commands": {
+        "save-to-archivebox-action": {
+            "description": "Save URL to ArchiveBox",
+            "suggested_key": {
+                "default": "Ctrl+Shift+X",
+                "mac": "Command+Shift+X"
+            }
+        }
     }
-  },
-  "options_page": "options.html",
-  "background": {
-    "service_worker": "background.js",
-    "type": "module"
-  },
-  "web_accessible_resources": [{
-    "resources": ["popup.css", "popup.js"],
-    "matches": ["*://*\/*"]
-  }],
-  "commands": {
-    "save-to-archivebox-action": {
-      "description": "Save URL to ArchiveBox",
-      "suggested_key": {
-        "default": "Ctrl+Shift+X",
-        "mac": "Command+Shift+X"
-      }
-    }
-  }
 }

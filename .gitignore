@@ -1,6 +1,4 @@
-.vim
-.vscode
-.yarn
+data
 
 dist
 node_modules
