@@ -279,7 +279,7 @@ async function exportPersonaCookies(id) {
   alert(`${Object.keys(persona.cookies).length} domain logins (${Object.values(persona.cookies).reduce((sum, cookies) => sum + cookies.length, 0)} cookies) copied to clipboard for "${persona.name}"! Save them into cookies.txt on your ArchiveBox server and run: archivebox config --set COOKIES_FILE=/path/to/cookies.txt`);
 }
 
-import { formatCookiesForExport } from './utils.js';
+import { formatCookiesForExport } from './utils';
 
 export function initializePersonasTab() {
   // Persona management

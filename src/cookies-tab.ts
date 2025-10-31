@@ -1,7 +1,7 @@
 let availableCookies = [];
 let selectedCookieDomains = new Set();
 
-import { formatCookiesForExport } from './utils.js';
+import { formatCookiesForExport } from './utils';
 
 export async function loadAvailableCookies() {
   
