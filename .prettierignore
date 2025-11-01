@@ -1,0 +1,6 @@
+.vim
+.vscode
+.yarn
+archivebox/data
+dist
+node_modules

@@ -1,0 +1,86 @@
+@mixin media-xs {
+    @media (min-width: $breakpoint-xs) {
+        @content;
+    }
+}
+
+@mixin media-sm {
+    @media (min-width: $breakpoint-sm) {
+        @content;
+    }
+}
+
+@mixin media-md {
+    @media (min-width: $breakpoint-md) {
+        @content;
+    }
+}
+
+@mixin media-lg {
+    @media (min-width: $breakpoint-lg) {
+        @content;
+    }
+}
+
+@mixin media-xl {
+    @media (min-width: $breakpoint-xl) {
+        @content;
+    }
+}
+
+@mixin media-xxl {
+    @media (min-width: $breakpoint-xxl) {
+        @content;
+    }
+}
+
+// Max-width (desktop-first)
+@mixin media-max-sm {
+    @media (max-width: #{$breakpoint-sm - 1px}) {
+        @content;
+    }
+}
+
+@mixin media-max-md {
+    @media (max-width: #{$breakpoint-md - 1px}) {
+        @content;
+    }
+}
+
+@mixin media-max-lg {
+    @media (max-width: #{$breakpoint-lg - 1px}) {
+        @content;
+    }
+}
+
+@mixin media-max-xl {
+    @media (max-width: #{$breakpoint-xl - 1px}) {
+        @content;
+    }
+}
+
+@mixin media-max-xxl {
+    @media (max-width: #{$breakpoint-xxl - 1px}) {
+        @content;
+    }
+}
+
+// Between breakpoints
+@mixin media-between($min, $max) {
+    @media (min-width: $min) and (max-width: #{$max - 1px}) {
+        @content;
+    }
+}
+
+// Custom breakpoint
+@mixin media-min($breakpoint) {
+    @media (min-width: $breakpoint) {
+        @content;
+    }
+}
+
+@mixin media-max($breakpoint) {
+    @media (max-width: #{$breakpoint - 1px}) {
+        @content;
+    }
+}

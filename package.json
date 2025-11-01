@@ -7,28 +7,36 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "jest ./test",
+    "lint": "prettier -w src",
+    "postinstall": "yarn dlx @yarnpkg/sdks vscode vim",
     "start:archivebox": "sh -c 'cd archivebox && docker compose up -d'",
     "generate:key": "node ./scripts/generate/key.js"
   },
   "devDependencies": {
+    "@babel/core": "^7.28.5",
+    "@preact/preset-vite": "^2.10.2",
+    "@prettier/plugin-oxc": "^0.0.4",
+    "@types/babel__core": "^7",
     "@types/bootstrap": "^5.2.10",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.9.2",
     "@types/puppeteer": "^5.4.7",
     "jest": "^30.2.0",
+    "oxlint": "^1.25.0",
+    "prettier": "^3.6.2",
     "puppeteer": "^24.27.0",
+    "sass-embedded": "^1.93.2",
     "ts-jest": "^29.4.5",
     "typescript": "~5.9.3",
-    "vite": "npm:rolldown-vite@7.1.14"
-  },
-  "overrides": {
-    "vite": "npm:rolldown-vite@7.1.14"
+    "vite": "^6"
   },
   "volta": {
     "node": "24.11.0",
-    "npm": "11.6.2"
+    "yarn": "4.10.3"
   },
   "dependencies": {
-    "bootstrap": "^5.3.8"
+    "@picocss/pico": "^2.1.1",
+    "preact": "^10.27.2",
+    "react-icons": "^5.5.0"
   }
 }

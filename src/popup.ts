@@ -1,195 +1,221 @@
 class Snapshot {
-  constructor(url, tags = [], title = '', favIconUrl = null) {
-    this.id = crypto.randomUUID();
-    this.url = url;
-    this.timestamp = new Date().toISOString();
-    this.tags = tags;
-    this.title = title;
-    this.favIconUrl = favIconUrl;
-  }
+    constructor(url, tags = [], title = '', favIconUrl = null) {
+        this.id = crypto.randomUUID()
+        this.url = url
+        this.timestamp = new Date().toISOString()
+        this.tags = tags
+        this.title = title
+        this.favIconUrl = favIconUrl
+    }
 }
 
-const IS_IN_POPUP = window.location.href.startsWith('chrome-extension://') && window.location.href.endsWith('/popup.html');
-const IS_ON_WEBSITE = !window.location.href.startsWith('chrome-extension://');
+const IS_IN_POPUP =
+    window.location.href.startsWith('chrome-extension://') &&
+    window.location.href.endsWith('/popup.html')
+const IS_ON_WEBSITE = !window.location.href.startsWith('chrome-extension://')
 
-window.popup_element = null;  // Global reference to popup element
-window.hide_timer = null;
+window.popup_element = null // Global reference to popup element
+window.hide_timer = null
 
 window.closePopup = function () {
-  document.querySelector(".archive-box-iframe")?.remove();
-  window.popup_element = null;
-  console.debug("Closed ArchiveBox popup");
-};
+    document.querySelector('.archive-box-iframe')?.remove()
+    window.popup_element = null
+    console.debug('Closed ArchiveBox popup')
+}
 
 // Handle escape key when popup doesn't have focus
 document.addEventListener('keydown', (e) => {
-  if (e.key == 'Escape') {
-    closePopup();
-  }
-});
+    if (e.key == 'Escape') {
+        closePopup()
+    }
+})
 
 async function getAllTags() {
-  const { entries: snapshots = [] } = await chrome.storage.local.get('entries');
-  return [...new Set(snapshots.flatMap(snapshot => snapshot.tags))]
-    .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+    const { entries: snapshots = [] } =
+        await chrome.storage.local.get('entries')
+    return [...new Set(snapshots.flatMap((snapshot) => snapshot.tags))].sort(
+        (a, b) => a.toLowerCase().localeCompare(b.toLowerCase())
+    )
 }
 
 async function sendToArchiveBox(url, tags) {
-  let status = "pending";
-  let ok = false;
+    let status = 'pending'
+    let ok = false
 
-  try {
-    console.log('i Sending to ArchiveBox', { url, tags });
-    await new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage({
-        type: 'archivebox_add',
-        body: JSON.stringify({
-          urls: [url],
-          tags: tags,
+    try {
+        console.log('i Sending to ArchiveBox', { url, tags })
+        await new Promise((resolve, reject) => {
+            chrome.runtime.sendMessage(
+                {
+                    type: 'archivebox_add',
+                    body: JSON.stringify({
+                        urls: [url],
+                        tags: tags,
+                    }),
+                },
+                (response) => {
+                    if (!response.ok) {
+                        reject(`${response.errorMessage}`)
+                    }
+                    resolve(response)
+                }
+            )
         })
-      }, (response) => {
-        if (!response.ok) {
-          reject(`${response.errorMessage}`);
-        }
-        resolve(response);
-      });
+
+        ok = true
+        status = 'Saved to ArchiveBox Server'
+    } catch (error) {
+        console.log(`ArchiveBox request failed: ${error}`)
+        ok = false
+        status = `Failed to archive: ${error}`
+    }
+
+    const status_div = popup_element.querySelector('small')
+    status_div.innerHTML = `
+    <span></span>
+    ${status}
+  `
+}
+
+window.getCurrentSnapshot = async function () {
+    const { entries: snapshots = [] } =
+        await chrome.storage.local.get('entries')
+    let current_snapshot = snapshots.find(
+        (snapshot) => snapshot.url === window.location.href
+    )
+
+    if (!current_snapshot) {
+        current_snapshot = new Snapshot(
+            String(window.location.href),
+            [],
+            document.title
+        )
+        snapshots.push(current_snapshot)
+        await chrome.storage.local.set({ entries: snapshots })
+    }
+
+    console.log('i Loaded current ArchiveBox snapshot', current_snapshot)
+    return { current_snapshot, snapshots } // Return both for atomic updates
+}
+
+window.getSuggestedTags = async function () {
+    const { current_snapshot, snapshots } = await getCurrentSnapshot()
+    // Get all unique tags sorted by recency, excluding the current snapshot's tags
+    return [
+        '⭐️',
+        ...new Set([
+            window.location.hostname.replace('www.', '').replace('.com', ''),
+            ...snapshots
+                .filter((snapshot) => snapshot.url !== current_snapshot.url) // Better way to exclude current
+                .reverse()
+                .flatMap((snapshot) => snapshot.tags),
+        ]),
+    ]
+        .filter((tag) => !current_snapshot.tags.includes(tag))
+        .slice(0, 5)
+}
+
+window.updateSuggestions = async function () {
+    // console.log('Getting tag suggestions');
+    if (!popup_element) return
+    const suggestions_div = popup_element.querySelector(
+        '.ARCHIVEBOX__tag-suggestions'
+    )
+    const suggested_tags = await getSuggestedTags()
+    // console.log('Got suggestions', suggested_tags);
+    suggestions_div.innerHTML = suggested_tags.length
+        ? `${suggested_tags.map((tag) => `<span>${tag}</span>`).join(' ')}`
+        : ''
+}
+
+window.updateCurrentTags = async function () {
+    if (!popup_element) return
+    const current_tags_div = popup_element.querySelector(
+        '.ARCHIVEBOX__current-tags'
+    )
+    const status_div = popup_element.querySelector('small')
+    const { current_snapshot } = await getCurrentSnapshot()
+
+    current_tags_div.innerHTML = current_snapshot.tags.length
+        ? `${current_snapshot.tags
+              .map((tag) => `<span data-tag="${tag}">${tag}</span>`)
+              .join(' ')}`
+        : ''
+
+    // Add click handlers for removing tags
+    current_tags_div
+        .querySelectorAll('.ARCHIVEBOX__tag-badge.current')
+        .forEach((badge) => {
+            badge.addEventListener('click', async (e) => {
+                if (e.target.classList.contains('current')) {
+                    const { current_snapshot, snapshots } =
+                        await getCurrentSnapshot()
+                    const tag_to_remove = e.target.dataset.tag
+                    current_snapshot.tags = current_snapshot.tags.filter(
+                        (tag) => tag !== tag_to_remove
+                    )
+                    await chrome.storage.local.set({ entries: snapshots })
+                    await updateCurrentTags()
+                    await updateSuggestions()
+                }
+            })
+        })
+
+    sendToArchiveBox(current_snapshot.url, current_snapshot.tags)
+}
+
+window.createPopup = async function () {
+    const { current_snapshot } = await getCurrentSnapshot()
+
+    // Create iframe container
+    document.querySelector('.archive-box-iframe')?.remove()
+    const iframe = document.createElement('iframe')
+    iframe.className = 'archive-box-iframe'
+
+    // Set iframe styles for positioning
+    Object.assign(iframe.style, {
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        zIndex: '2147483647',
+        background: 'transparent',
+        borderRadius: '6px',
+        border: '0px',
+        margin: '0px',
+        padding: '0px',
+        transform: 'translateY(0px)',
+        boxSizing: 'border-box',
+        width: '550px', // Initial width
+        height: '200px', // Initial height
+        transition: 'height 0.2s ease-out', // Smooth height transitions
+        display: 'block',
     })
 
-    ok = true;
-    status = 'Saved to ArchiveBox Server'
-  } catch (error) {
-    console.log(`ArchiveBox request failed: ${error}`);
-    ok = false;
-    status = `Failed to archive: ${error}`
-  }
+    document.body.appendChild(iframe)
 
-  const status_div = popup_element.querySelector('small');
-  status_div.innerHTML = `
-    <span class="status-indicator ${ok ? 'success' : 'error'}"></span>
-    ${status}
-  `;
-}
-
-window.getCurrentSnapshot = async function() {
-  const { entries: snapshots = [] } = await chrome.storage.local.get('entries');
-  let current_snapshot = snapshots.find(snapshot => snapshot.url === window.location.href);
-  
-  if (!current_snapshot) {
-    current_snapshot = new Snapshot(String(window.location.href), [], document.title);
-    snapshots.push(current_snapshot);
-    await chrome.storage.local.set({ entries: snapshots });
-  }
-
-  console.log('i Loaded current ArchiveBox snapshot', current_snapshot);
-  return { current_snapshot, snapshots };  // Return both for atomic updates
-}
-
-window.getSuggestedTags = async function() {
-  const { current_snapshot, snapshots } = await getCurrentSnapshot();
-  // Get all unique tags sorted by recency, excluding the current snapshot's tags
-  return ['⭐️', ...new Set(
-    [
-      window.location.hostname.replace('www.', '').replace('.com', ''),
-      ...snapshots
-          .filter(snapshot => snapshot.url !== current_snapshot.url)  // Better way to exclude current
-          .reverse()
-          .flatMap(snapshot => snapshot.tags),
-    ]
-  )]
-  .filter(tag => !current_snapshot.tags.includes(tag))
-  .slice(0, 5);
-}
-
-window.updateSuggestions = async function() {
-  // console.log('Getting tag suggestions');
-  if (!popup_element) return
-  const suggestions_div = popup_element.querySelector('.ARCHIVEBOX__tag-suggestions');
-  const suggested_tags = await getSuggestedTags();
-  // console.log('Got suggestions', suggested_tags);
-  suggestions_div.innerHTML = suggested_tags.length
-    ? `${suggested_tags
-        .map(tag => `<span class="ARCHIVEBOX__tag-badge suggestion">${tag}</span>`)
-        .join(' ')}`
-    : '';
-}
-
-window.updateCurrentTags = async function() {
-  if (!popup_element) return;
-  const current_tags_div = popup_element.querySelector('.ARCHIVEBOX__current-tags');
-  const status_div = popup_element.querySelector('small');
-  const { current_snapshot } = await getCurrentSnapshot();
-
-  current_tags_div.innerHTML = current_snapshot.tags.length
-    ? `${current_snapshot.tags
-        .map(tag => `<span class="ARCHIVEBOX__tag-badge current" data-tag="${tag}">${tag}</span>`)
-        .join(' ')}`
-    : '';
-
-  // Add click handlers for removing tags
-  current_tags_div.querySelectorAll('.ARCHIVEBOX__tag-badge.current').forEach(badge => {
-    badge.addEventListener('click', async (e) => {
-      if (e.target.classList.contains('current')) {
-        const { current_snapshot, snapshots } = await getCurrentSnapshot();
-        const tag_to_remove = e.target.dataset.tag;
-        current_snapshot.tags = current_snapshot.tags.filter(tag => tag !== tag_to_remove);
-        await chrome.storage.local.set({ entries: snapshots });
-        await updateCurrentTags();
-        await updateSuggestions();
-      }
-    });
-  });
-
-  sendToArchiveBox(current_snapshot.url, current_snapshot.tags);
-}
-
-
-window.createPopup = async function() {
-  const { current_snapshot } = await getCurrentSnapshot();
-
-  // Create iframe container
-  document.querySelector('.archive-box-iframe')?.remove();
-  const iframe = document.createElement('iframe');
-  iframe.className = 'archive-box-iframe';
-  
-  // Set iframe styles for positioning
-  Object.assign(iframe.style, {
-    position: 'fixed',
-    top: '20px',
-    right: '20px',
-    zIndex: '2147483647',
-    background: 'transparent',
-    borderRadius: '6px',
-    border: '0px',
-    margin: '0px',
-    padding: '0px',
-    transform: 'translateY(0px)',
-    boxSizing: 'border-box',
-    width: '550px', // Initial width
-    height: '200px', // Initial height
-    transition: 'height 0.2s ease-out', // Smooth height transitions
-    display: 'block',
-  });
-
-  document.body.appendChild(iframe);
-
-  // Function to resize iframe based on content
-  function resizeIframe() {
-    const doc = iframe.contentDocument || iframe.contentWindow.document;
-    const content = doc.querySelector('.archive-box-popup');
-    if (content) {
-      const height = content.offsetHeight;
-      const dropdown = doc.querySelector('.ARCHIVEBOX__autocomplete-dropdown');
-      const dropdownHeight = dropdown && dropdown.style.display !== 'none' ? dropdown.offsetHeight : 0;
-      iframe.style.height = (height + dropdownHeight + 20) + 'px'; // Add padding
+    // Function to resize iframe based on content
+    function resizeIframe() {
+        const doc = iframe.contentDocument || iframe.contentWindow.document
+        const content = doc.querySelector('.archive-box-popup')
+        if (content) {
+            const height = content.offsetHeight
+            const dropdown = doc.querySelector(
+                '.ARCHIVEBOX__autocomplete-dropdown'
+            )
+            const dropdownHeight =
+                dropdown && dropdown.style.display !== 'none'
+                    ? dropdown.offsetHeight
+                    : 0
+            iframe.style.height = height + dropdownHeight + 20 + 'px' // Add padding
+        }
     }
-  }
 
-  // Create popup content inside iframe
-  const doc = iframe.contentDocument || iframe.contentWindow.document;
-  
-  // Add styles to iframe
-  const style = doc.createElement('style');
-  style.textContent = `
+    // Create popup content inside iframe
+    const doc = iframe.contentDocument || iframe.contentWindow.document
+
+    // Add styles to iframe
+    const style = doc.createElement('style')
+    style.textContent = `
     html, body {
       margin: 0;
       padding: 0;
@@ -393,262 +419,279 @@ window.createPopup = async function() {
     .ARCHIVEBOX__autocomplete-item.selected {
       background: #f0f0f0;
     }
-  `;
-  doc.head.appendChild(style);
+  `
+    doc.head.appendChild(style)
 
-  // Create popup content
-  const popup = doc.createElement('div');
-  popup.className = 'archive-box-popup';
-  popup.innerHTML = `
-    <a href="#" class="options-link" title="Open in ArchiveBox">🏛️</a> <input type="search" placeholder="Add tags + press ⏎   |   ⎋ to close">
+    // Create popup content
+    const popup = doc.createElement('div')
+    popup.className = 'archive-box-popup'
+    popup.innerHTML = `
+    <a href="#" title="Open in ArchiveBox">🏛️</a> <input type="search" placeholder="Add tags + press ⏎   |   ⎋ to close">
     <br/>
-    <div class="ARCHIVEBOX__current-tags"></div><div class="ARCHIVEBOX__tag-suggestions"></div><br/>
-    <small class="fade-out">
-      <span class="status-indicator"></span>
+    <div></div><div></div><br/>
+    <small>
+      <span></span>
       Saved locally...
     </small>
-  `;
+  `
 
-  doc.body.appendChild(popup);
-  window.popup_element = popup;
+    doc.body.appendChild(popup)
+    window.popup_element = popup
 
-  // Add message passing for options link
-  popup.querySelector('.options-link').addEventListener('click', (e) => {
-    e.preventDefault();
-    chrome.runtime.sendMessage({ action: 'openOptionsPage', id: current_snapshot.id });
-  });
+    // Add message passing for options link
+    popup.querySelector('.options-link').addEventListener('click', (e) => {
+        e.preventDefault()
+        chrome.runtime.sendMessage({
+            action: 'openOptionsPage',
+            id: current_snapshot.id,
+        })
+    })
 
-  const input = popup.querySelector('input');
-  const suggestions_div = popup.querySelector('.ARCHIVEBOX__tag-suggestions');
-  const current_tags_div = popup.querySelector('.ARCHIVEBOX__current-tags');
-  
-  // console.log('Getting current tags and suggestions');
+    const input = popup.querySelector('input')
+    const suggestions_div = popup.querySelector('.ARCHIVEBOX__tag-suggestions')
+    const current_tags_div = popup.querySelector('.ARCHIVEBOX__current-tags')
 
-  // Initial display of current tags and suggestions
-  await window.updateCurrentTags();
-  await window.updateSuggestions();
-  
-  // Add click handlers for suggestion badges
-  suggestions_div.addEventListener('click', async (e) => {
-    if (e.target.classList.contains('suggestion')) {
-      const { current_snapshot, snapshots } = await getCurrentSnapshot();
-      const tag = e.target.textContent.replace(' +', '');
-      if (!current_snapshot.tags.includes(tag)) {
-        current_snapshot.tags.push(tag);
-        await chrome.storage.local.set({ entries: snapshots });
-        await updateCurrentTags();
-        await updateSuggestions();
-      }
-    }
-  });
-  current_tags_div.addEventListener('click', async (e) => {
-    if (e.target.classList.contains('current')) {
-      const tag = e.target.dataset.tag;
-      console.log('Removing tag', tag);
-      const { current_snapshot, snapshots } = await getCurrentSnapshot();
-      current_snapshot.tags = current_snapshot.tags.filter(t => t !== tag);
-      await chrome.storage.local.set({ entries: snapshots });
-      await updateCurrentTags();
-      await updateSuggestions();
-    }
-  });
+    // console.log('Getting current tags and suggestions');
 
-  // Add dropdown container
-  const dropdownContainer = document.createElement('div');
-  dropdownContainer.className = 'ARCHIVEBOX__autocomplete-dropdown';
-  dropdownContainer.style.display = 'none';
-  input.parentNode.insertBefore(dropdownContainer, input.nextSibling);
+    // Initial display of current tags and suggestions
+    await window.updateCurrentTags()
+    await window.updateSuggestions()
 
-  let selectedIndex = -1;
-  let filteredTags = [];
+    // Add click handlers for suggestion badges
+    suggestions_div.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('suggestion')) {
+            const { current_snapshot, snapshots } = await getCurrentSnapshot()
+            const tag = e.target.textContent.replace(' +', '')
+            if (!current_snapshot.tags.includes(tag)) {
+                current_snapshot.tags.push(tag)
+                await chrome.storage.local.set({ entries: snapshots })
+                await updateCurrentTags()
+                await updateSuggestions()
+            }
+        }
+    })
+    current_tags_div.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('current')) {
+            const tag = e.target.dataset.tag
+            console.log('Removing tag', tag)
+            const { current_snapshot, snapshots } = await getCurrentSnapshot()
+            current_snapshot.tags = current_snapshot.tags.filter(
+                (t) => t !== tag
+            )
+            await chrome.storage.local.set({ entries: snapshots })
+            await updateCurrentTags()
+            await updateSuggestions()
+        }
+    })
 
-  async function updateDropdown() {
-    const inputValue = input.value.toLowerCase();
-    const allTags = await getAllTags();
-    
-    // Filter tags that match input and aren't already used
-    const { current_snapshot } = await getCurrentSnapshot();
-    filteredTags = allTags
-      .filter(tag => 
-        tag.toLowerCase().includes(inputValue) && 
-        !current_snapshot.tags.includes(tag) &&
-        inputValue
-      )
-      .slice(0, 5);  // Limit to 5 suggestions
+    // Add dropdown container
+    const dropdownContainer = document.createElement('div')
+    dropdownContainer.className = 'ARCHIVEBOX__autocomplete-dropdown'
+    dropdownContainer.style.display = 'none'
+    input.parentNode.insertBefore(dropdownContainer, input.nextSibling)
 
-    if (filteredTags.length === 0) {
-      dropdownContainer.style.display = 'none';
-      selectedIndex = -1;
-    } else {
-      dropdownContainer.innerHTML = filteredTags
-        .map((tag, index) => `
-          <div class="ARCHIVEBOX__autocomplete-item ${index === selectedIndex ? 'selected' : ''}"
+    let selectedIndex = -1
+    let filteredTags = []
+
+    async function updateDropdown() {
+        const inputValue = input.value.toLowerCase()
+        const allTags = await getAllTags()
+
+        // Filter tags that match input and aren't already used
+        const { current_snapshot } = await getCurrentSnapshot()
+        filteredTags = allTags
+            .filter(
+                (tag) =>
+                    tag.toLowerCase().includes(inputValue) &&
+                    !current_snapshot.tags.includes(tag) &&
+                    inputValue
+            )
+            .slice(0, 5) // Limit to 5 suggestions
+
+        if (filteredTags.length === 0) {
+            dropdownContainer.style.display = 'none'
+            selectedIndex = -1
+        } else {
+            dropdownContainer.innerHTML = filteredTags
+                .map(
+                    (tag, index) => `
+          <div
                data-tag="${tag}">
             ${tag}
           </div>
-        `)
-        .join('');
-      
-      dropdownContainer.style.display = 'block';
-    }
+        `
+                )
+                .join('')
 
-    // Trigger resize after dropdown visibility changes
-    setTimeout(resizeIframe, 0);
-  }
-
-  // Handle input changes
-  input.addEventListener('input', updateDropdown);
-
-  // Handle keyboard navigation
-
-  // handle escape key when popup has focus
-  input.addEventListener("keydown", async (e) => {
-    if (e.key === "Escape") {
-      e.stopPropagation();
-      dropdownContainer.style.display = "none";
-      selectedIndex = -1;
-      closePopup();
-      return;
-    }
-
-    if (!filteredTags.length) {
-      if (e.key === 'Enter' && input.value.trim()) {
-        e.preventDefault();
-        const { current_snapshot, snapshots } = await getCurrentSnapshot();
-        const newTag = input.value.trim();
-        if (!current_snapshot.tags.includes(newTag)) {
-          current_snapshot.tags.push(newTag);
-          await chrome.storage.local.set({ entries: snapshots });
-          input.value = '';
-          await updateCurrentTags();
-          await updateSuggestions();
+            dropdownContainer.style.display = 'block'
         }
-      }
-      return;
+
+        // Trigger resize after dropdown visibility changes
+        setTimeout(resizeIframe, 0)
     }
 
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        selectedIndex = Math.min(selectedIndex + 1, filteredTags.length - 1);
-        updateDropdown();
-        break;
-      
-      case 'ArrowUp':
-        e.preventDefault();
-        selectedIndex = Math.max(selectedIndex - 1, -1);
-        updateDropdown();
-        break;
-      
-      case 'Enter':
-        e.preventDefault();
-        if (selectedIndex >= 0) {
-          const selectedTag = filteredTags[selectedIndex];
-          const { current_snapshot, snapshots } = await getCurrentSnapshot();
-          if (!current_snapshot.tags.includes(selectedTag)) {
-            current_snapshot.tags.push(selectedTag);
-            await chrome.storage.local.set({ entries: snapshots});
-          }
-          input.value = '';
-          dropdownContainer.style.display = 'none';
-          selectedIndex = -1;
-          await updateCurrentTags();
-          await updateSuggestions();
+    // Handle input changes
+    input.addEventListener('input', updateDropdown)
+
+    // Handle keyboard navigation
+
+    // handle escape key when popup has focus
+    input.addEventListener('keydown', async (e) => {
+        if (e.key === 'Escape') {
+            e.stopPropagation()
+            dropdownContainer.style.display = 'none'
+            selectedIndex = -1
+            closePopup()
+            return
         }
-        break;
-      
-      case 'Tab':
-        if (selectedIndex >= 0) {
-          e.preventDefault();
-          input.value = filteredTags[selectedIndex];
-          dropdownContainer.style.display = 'none';
-          selectedIndex = -1;
+
+        if (!filteredTags.length) {
+            if (e.key === 'Enter' && input.value.trim()) {
+                e.preventDefault()
+                const { current_snapshot, snapshots } =
+                    await getCurrentSnapshot()
+                const newTag = input.value.trim()
+                if (!current_snapshot.tags.includes(newTag)) {
+                    current_snapshot.tags.push(newTag)
+                    await chrome.storage.local.set({ entries: snapshots })
+                    input.value = ''
+                    await updateCurrentTags()
+                    await updateSuggestions()
+                }
+            }
+            return
         }
-        break;
+
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault()
+                selectedIndex = Math.min(
+                    selectedIndex + 1,
+                    filteredTags.length - 1
+                )
+                updateDropdown()
+                break
+
+            case 'ArrowUp':
+                e.preventDefault()
+                selectedIndex = Math.max(selectedIndex - 1, -1)
+                updateDropdown()
+                break
+
+            case 'Enter':
+                e.preventDefault()
+                if (selectedIndex >= 0) {
+                    const selectedTag = filteredTags[selectedIndex]
+                    const { current_snapshot, snapshots } =
+                        await getCurrentSnapshot()
+                    if (!current_snapshot.tags.includes(selectedTag)) {
+                        current_snapshot.tags.push(selectedTag)
+                        await chrome.storage.local.set({ entries: snapshots })
+                    }
+                    input.value = ''
+                    dropdownContainer.style.display = 'none'
+                    selectedIndex = -1
+                    await updateCurrentTags()
+                    await updateSuggestions()
+                }
+                break
+
+            case 'Tab':
+                if (selectedIndex >= 0) {
+                    e.preventDefault()
+                    input.value = filteredTags[selectedIndex]
+                    dropdownContainer.style.display = 'none'
+                    selectedIndex = -1
+                }
+                break
+        }
+    })
+
+    // Handle click selection
+    dropdownContainer.addEventListener('click', async (e) => {
+        const item = e.target.closest('.ARCHIVEBOX__autocomplete-item')
+        if (item) {
+            const selectedTag = item.dataset.tag
+            const { current_snapshot, snapshots } = await getCurrentSnapshot()
+            if (!current_snapshot.tags.includes(selectedTag)) {
+                current_snapshot.tags.push(selectedTag)
+                await chrome.storage.local.set({ entries: snapshots })
+            }
+            input.value = ''
+            dropdownContainer.style.display = 'none'
+            selectedIndex = -1
+            await updateCurrentTags()
+            await updateSuggestions()
+        }
+    })
+
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (
+            !e.target.closest('.ARCHIVEBOX__autocomplete-dropdown') &&
+            !e.target.closest('input')
+        ) {
+            dropdownContainer.style.display = 'none'
+            selectedIndex = -1
+        }
+    })
+
+    input.focus()
+    console.log('+ Showed ArchiveBox popup in iframe')
+
+    // Add resize triggers
+    const resizeObserver = new ResizeObserver(() => {
+        resizeIframe()
+    })
+
+    // Observe the popup content for size changes
+    resizeObserver.observe(popup)
+
+    const originalUpdateCurrentTags = window.updateCurrentTags
+    window.updateCurrentTags = async function () {
+        await originalUpdateCurrentTags()
+        resizeIframe()
     }
-  });
 
+    async function updateDropdown() {
+        const inputValue = input.value.toLowerCase()
+        const allTags = await getAllTags()
 
-  // Handle click selection
-  dropdownContainer.addEventListener('click', async (e) => {
-    const item = e.target.closest('.ARCHIVEBOX__autocomplete-item');
-    if (item) {
-      const selectedTag = item.dataset.tag;
-      const { current_snapshot, snapshots } = await getCurrentSnapshot();
-      if (!current_snapshot.tags.includes(selectedTag)) {
-        current_snapshot.tags.push(selectedTag);
-        await chrome.storage.local.set({ entries: snapshots });
-      }
-      input.value = '';
-      dropdownContainer.style.display = 'none';
-      selectedIndex = -1;
-      await updateCurrentTags();
-      await updateSuggestions();
-    }
-  });
+        // Filter tags that match input and aren't already used
+        const { current_snapshot } = await getCurrentSnapshot()
+        filteredTags = allTags
+            .filter(
+                (tag) =>
+                    tag.toLowerCase().includes(inputValue) &&
+                    !current_snapshot.tags.includes(tag) &&
+                    inputValue
+            )
+            .slice(0, 5) // Limit to 5 suggestions
 
-  // Hide dropdown when clicking outside
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('.ARCHIVEBOX__autocomplete-dropdown') && 
-        !e.target.closest('input')) {
-      dropdownContainer.style.display = 'none';
-      selectedIndex = -1;
-    }
-  });
-
-  input.focus();
-  console.log('+ Showed ArchiveBox popup in iframe');
-
-  // Add resize triggers
-  const resizeObserver = new ResizeObserver(() => {
-    resizeIframe();
-  });
-
-  // Observe the popup content for size changes
-  resizeObserver.observe(popup);
-
-  const originalUpdateCurrentTags = window.updateCurrentTags;
-  window.updateCurrentTags = async function() {
-    await originalUpdateCurrentTags();
-    resizeIframe();
-  }
-
-  async function updateDropdown() {
-    const inputValue = input.value.toLowerCase();
-    const allTags = await getAllTags();
-    
-    // Filter tags that match input and aren't already used
-    const { current_snapshot } = await getCurrentSnapshot();
-    filteredTags = allTags
-      .filter(tag => 
-        tag.toLowerCase().includes(inputValue) && 
-        !current_snapshot.tags.includes(tag) &&
-        inputValue
-      )
-      .slice(0, 5);  // Limit to 5 suggestions
-
-    if (filteredTags.length === 0) {
-      dropdownContainer.style.display = 'none';
-      selectedIndex = -1;
-    } else {
-      dropdownContainer.innerHTML = filteredTags
-        .map((tag, index) => `
-          <div class="ARCHIVEBOX__autocomplete-item ${index === selectedIndex ? 'selected' : ''}"
+        if (filteredTags.length === 0) {
+            dropdownContainer.style.display = 'none'
+            selectedIndex = -1
+        } else {
+            dropdownContainer.innerHTML = filteredTags
+                .map(
+                    (tag, index) => `
+          <div
                data-tag="${tag}">
             ${tag}
           </div>
-        `)
-        .join('');
-      
-      dropdownContainer.style.display = 'block';
+        `
+                )
+                .join('')
+
+            dropdownContainer.style.display = 'block'
+        }
+
+        // Trigger resize after dropdown visibility changes
+        setTimeout(resizeIframe, 0)
     }
 
-    // Trigger resize after dropdown visibility changes
-    setTimeout(resizeIframe, 0);
-  }
-
-  // Initial resize
-  setTimeout(resizeIframe, 0);
+    // Initial resize
+    setTimeout(resizeIframe, 0)
 }
 
-window.createPopup();
+window.createPopup()

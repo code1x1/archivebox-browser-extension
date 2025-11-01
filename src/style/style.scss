@@ -1,0 +1,62 @@
+@use '@picocss/pico';
+@import 'variables';
+@import 'mixins';
+
+html {
+    @include media-max-sm {
+        font-size: 100%;
+    }
+    @include media-sm {
+        font-size: 106.25%;
+    }
+    @include media-md {
+        font-size: 112.5%;
+    }
+    @include media-lg {
+        font-size: 118.75%;
+    }
+    @include media-xl {
+        font-size: 125%;
+    }
+    @include media-xxl {
+        font-size: 131.25%;
+    }
+}
+
+.mx-2 {
+    margin-left: 2rem;
+    margin-right: 2rem;
+}
+
+.my-2 {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+}
+
+.px-2 {
+    padding-left: 2rem;
+    padding-right: 2rem;
+}
+
+.py-2 {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+.modal {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--pico-modal-overlay-background-color);
+    & > div {
+        flex-shrink: 0;
+        background-color: var(--pico-background-color);
+        border-radius: 1rem;
+        padding: 1rem;
+    }
+}
