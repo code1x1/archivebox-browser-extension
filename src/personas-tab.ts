@@ -1,7 +1,9 @@
+import browser from 'webextension-polyfill'
+
 let currentPersonas = []
 
 async function detectCurrentSettings(personaId) {
-    const { personas } = await chrome.storage.local.get('personas')
+    const { personas } = await browser.storage.local.get('personas')
     const persona = personas.find((p) => p.id === personaId)
 
     console.log('Updating settings for profile:', personaId, persona.settings)
@@ -21,7 +23,7 @@ async function detectCurrentSettings(personaId) {
 
     persona.settings = settings
 
-    await chrome.storage.local.set({ personas })
+    await browser.storage.local.set({ personas })
     await loadPersonas()
     return settings
 }
@@ -51,15 +53,14 @@ async function removePersonaDomain(personaId, domain) {
     const persona = currentPersonas.find((p) => p.id === personaId)
     if (!persona) return
     delete persona.cookies[domain]
-    await chrome.storage.local.set({ personas: currentPersonas })
+    await browser.storage.local.set({ personas: currentPersonas })
     await loadPersonas()
 }
 
 async function loadPersonas() {
-    let { personas = [], activePersona = '' } = await chrome.storage.local.get([
-        'personas',
-        'activePersona',
-    ])
+    let { personas = [], activePersona = '' } = await browser.storage.local.get(
+        ['personas', 'activePersona']
+    )
     currentPersonas = personas
 
     // if no personas exist, create a default one
@@ -67,14 +68,16 @@ async function loadPersonas() {
         createNewPersona('Private')
         createNewPersona('Work')
         createNewPersona('Anonymous')
-        ;({ personas, activePersona } = await chrome.storage.local.get([
+        ;({ personas, activePersona } = await browser.storage.local.get([
             'personas',
             'activePersona',
         ]))
     }
 
     if (!activePersona) {
-        await chrome.storage.local.set({ activePersona: currentPersonas[0].id })
+        await browser.storage.local.set({
+            activePersona: currentPersonas[0].id,
+        })
         activePersona = currentPersonas[0].id
     }
     window.activePersona = activePersona
@@ -225,7 +228,7 @@ async function createNewPersona(default_name) {
     }
 
     currentPersonas.push(persona)
-    await chrome.storage.local.set({ personas: currentPersonas })
+    await browser.storage.local.set({ personas: currentPersonas })
     await loadPersonas()
     const settings = await detectCurrentSettings(persona.id)
     persona.settings = settings
@@ -251,7 +254,7 @@ async function savePersonaSettings(id) {
         input.dataset.original = input.value
     })
 
-    await chrome.storage.local.set({ personas: currentPersonas })
+    await browser.storage.local.set({ personas: currentPersonas })
     row.querySelector('.save-settings').style.display = 'none'
 
     // Refresh UI
@@ -281,18 +284,18 @@ async function deletePersona(id) {
     if (!confirm('Delete this profile? This cannot be undone.')) return
 
     currentPersonas = currentPersonas.filter((p) => p.id !== id)
-    const { activePersona } = await chrome.storage.local.get('activePersona')
+    const { activePersona } = await browser.storage.local.get('activePersona')
 
     if (activePersona === id) {
-        await chrome.storage.local.set({ activePersona: '' })
+        await browser.storage.local.set({ activePersona: '' })
     }
 
-    await chrome.storage.local.set({ personas: currentPersonas })
+    await browser.storage.local.set({ personas: currentPersonas })
     await loadPersonas()
 }
 
 async function setActivePersona(id) {
-    await chrome.storage.local.set({ activePersona: id })
+    await browser.storage.local.set({ activePersona: id })
     document.getElementById('importCookies').disabled = !id
     await loadPersonas()
 }

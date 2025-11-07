@@ -1,42 +1,48 @@
 {
-  "name": "archivebox-browser-extension",
-  "version": "2.1.5",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "test": "jest ./test",
-    "lint": "prettier -w src",
-    "postinstall": "yarn dlx @yarnpkg/sdks vscode vim",
-    "start:archivebox": "sh -c 'cd archivebox && docker compose up -d'",
-    "generate:key": "node ./scripts/generate/key.js"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.28.5",
-    "@preact/preset-vite": "^2.10.2",
-    "@prettier/plugin-oxc": "^0.0.4",
-    "@types/babel__core": "^7",
-    "@types/bootstrap": "^5.2.10",
-    "@types/jest": "^30.0.0",
-    "@types/node": "^24.9.2",
-    "@types/puppeteer": "^5.4.7",
-    "jest": "^30.2.0",
-    "oxlint": "^1.25.0",
-    "prettier": "^3.6.2",
-    "puppeteer": "^24.27.0",
-    "sass-embedded": "^1.93.2",
-    "ts-jest": "^29.4.5",
-    "typescript": "~5.9.3",
-    "vite": "^6"
-  },
-  "volta": {
-    "node": "24.11.0",
-    "yarn": "4.10.3"
-  },
-  "dependencies": {
-    "@picocss/pico": "^2.1.1",
-    "preact": "^10.27.2",
-    "react-icons": "^5.5.0"
-  }
+    "name": "archivebox-browser-extension",
+    "version": "2.1.5",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview",
+        "start": "yarn dlx web-ext run --source-dir dist-firefox --firefox=\"/Applications/Firefox Nightly.app/Contents/MacOS/firefox\" --firefox-profile \"$HOME/Library/Application Support/Firefox/Profiles/n41qnnye.default-nightly\"",
+        "test": "jest ./test",
+        "lint": "prettier -w src",
+        "postinstall": "yarn dlx @yarnpkg/sdks vscode vim && [ ! -f .env ] && cp .env.local .env",
+        "start:archivebox": "sh -c 'cd archivebox && docker compose up -d'",
+        "generate:key": "node ./scripts/generate/key.js"
+    },
+    "devDependencies": {
+        "@babel/core": "^7.28.5",
+        "@preact/preset-vite": "^2.10.2",
+        "@prettier/plugin-oxc": "^0.0.4",
+        "@types/babel__core": "^7",
+        "@types/bootstrap": "^5.2.10",
+        "@types/jest": "^30.0.0",
+        "@types/node": "^24.9.2",
+        "@types/puppeteer": "^5.4.7",
+        "@types/webextension-polyfill": "^0.12.4",
+        "jest": "^30.2.0",
+        "oxlint": "^1.25.0",
+        "prettier": "^3.6.2",
+        "puppeteer": "^24.27.0",
+        "rollup-plugin-inline-source": "^1.0.2",
+        "sass-embedded": "^1.93.2",
+        "ts-jest": "^29.4.5",
+        "typescript": "~5.9.3",
+        "vite": "^6",
+        "vite-plugin-web-extension": "^4.5.0",
+        "webextension-polyfill": "^0.12.0"
+    },
+    "volta": {
+        "node": "24.11.0",
+        "yarn": "4.10.3"
+    },
+    "dependencies": {
+        "@picocss/pico": "^2.1.1",
+        "preact": "^10.27.2",
+        "react-icons": "^5.5.0",
+        "zod": "^4.1.12"
+    }
 }

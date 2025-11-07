@@ -42,15 +42,15 @@
 // })
 
 import { render } from 'preact'
-import './style/style.scss'
-import { Footer } from './footer'
-import { Navigation } from './navigation'
-import { ImportConfig } from './options/sections/import-config'
-import { ServerConfig } from './options/sections/server-config'
-import { PersonasConfig } from './options/sections/personas-config'
-import { UrlConfig } from './options/sections/url-config'
+import '../style/style.scss'
+import { Footer } from '../../footer'
+import { Navigation } from '../../navigation'
+import { ImportConfig } from './sections/import-config'
+import { ServerConfig } from './sections/server-config'
+import { PersonasConfig } from './sections/personas-config'
+import { UrlConfig } from './sections/url-config'
 import { useState } from 'preact/hooks'
-import { app } from './utils/html'
+import { app } from '../../utils/html'
 import { FcDatabase, FcFeedIn, FcManager, FcSettings } from 'react-icons/fc'
 
 export function Options() {

@@ -1,0 +1,57 @@
+{
+    "manifest_version": 3,
+    "version": "2.1.5",
+    "name": "ArchiveBox Extension",
+    "description": "Collect URLs and preserve them using a remote ArchiveBox server",
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "@archiveBox-extension",
+            "strict_min_version": "144.0"
+        }
+    },
+    "permissions": [
+        "storage",
+        "scripting",
+        "activeTab",
+        "contextMenus",
+        "unlimitedStorage"
+    ],
+    "optional_permissions": ["cookies", "history", "bookmarks", "tabs"],
+    "optional_host_permissions": ["<all_urls>"],
+    "icons": {
+        "16": "assets/16.png",
+        "32": "assets/32.png",
+        "48": "assets/48.png",
+        "128": "assets/128.png"
+    },
+    "action": {
+        "default_popup": "src/popup/popup.html",
+        "default_title": "Save to ArchiveBox",
+        "default_icon": {
+            "16": "assets/16.png",
+            "32": "assets/32.png",
+            "48": "assets/48.png",
+            "128": "assets/128.png"
+        }
+    },
+    "options_page": "src/options/options.html",
+    "background": {
+        "scripts": ["src/background.ts"],
+        "type": "module"
+    },
+    "web_accessible_resources": [
+        {
+            "resources": ["src/popup/popup.html"],
+            "matches": ["*://*/*"]
+        }
+    ],
+    "commands": {
+        "save-to-archivebox-action": {
+            "description": "Save URL to ArchiveBox",
+            "suggested_key": {
+                "default": "Ctrl+Shift+X",
+                "mac": "Command+Shift+X"
+            }
+        }
+    }
+}

@@ -1,10 +1,12 @@
+import browser from 'webextension-polyfill'
+
 let availableCookies = []
 let selectedCookieDomains = new Set()
 
 import { formatCookiesForExport } from './utils'
 
 export async function loadAvailableCookies() {
-    const allCookies = await chrome.cookies.getAll({})
+    const allCookies = await browser.cookies.getAll({})
 
     // Group cookies by domain
     const cookiesByDomain = {}
@@ -107,13 +109,13 @@ async function previewCookies(domain) {
 // Using formatCookiesForExport from utils.js
 
 async function importSelectedCookies() {
-    const { activePersona } = await chrome.storage.local.get('activePersona')
+    const { activePersona } = await browser.storage.local.get('activePersona')
     if (!activePersona) {
         alert('Please select an active persona first')
         return
     }
 
-    const { personas = [] } = await chrome.storage.local.get('personas')
+    const { personas = [] } = await browser.storage.local.get('personas')
     const persona = personas.find((p) => p.id === activePersona)
     if (!persona) {
         alert('Selected persona not found')
@@ -135,7 +137,7 @@ async function importSelectedCookies() {
     persona.lastUsed = new Date().toISOString()
 
     // Save updated personas
-    await chrome.storage.local.set({ personas })
+    await browser.storage.local.set({ personas })
 
     // Clear selection
     selectedCookieDomains.clear()
@@ -200,7 +202,7 @@ document
     .getElementById('requestCookiesPermission')
     .addEventListener('click', async () => {
         // request permission to access cookies
-        const permission = await chrome.permissions.request({
+        const permission = await browser.permissions.request({
             permissions: ['cookies'],
             origins: ['*://*\/*'],
         })

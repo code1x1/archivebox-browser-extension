@@ -1,3 +1,5 @@
+@use 'variables' as *;
+
 @mixin media-xs {
     @media (min-width: $breakpoint-xs) {
         @content;

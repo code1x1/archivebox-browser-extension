@@ -1,3 +1,5 @@
+import browser from 'webextension-polyfill'
+
 import {
     filterSnapshots,
     addToArchiveBox,
@@ -120,7 +122,7 @@ export function initializeSnapshotsTab() {
             .getElementById('saveTagChanges')
             .addEventListener('click', async () => {
                 const { entries: snapshots = [] } =
-                    await chrome.storage.local.get('entries')
+                    await browser.storage.local.get('entries')
                 const newTags = getCurrentModalTags()
 
                 // Update tags for all selected snapshots
@@ -130,7 +132,7 @@ export function initializeSnapshotsTab() {
                     }
                 })
 
-                await chrome.storage.local.set({ entries: snapshots })
+                await browser.storage.local.set({ entries: snapshots })
 
                 // Close modal and refresh view
                 const modalInstance = bootstrap.Modal.getInstance(modal)
@@ -141,7 +143,7 @@ export function initializeSnapshotsTab() {
 
     async function getAllUniqueTags() {
         const { entries: snapshots = [] } =
-            await chrome.storage.local.get('entries')
+            await browser.storage.local.get('entries')
         return [
             ...new Set(snapshots.flatMap((snapshot) => snapshot.tags)),
         ].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
@@ -164,7 +166,7 @@ export function initializeSnapshotsTab() {
 
     async function updateCurrentTagsList() {
         const { entries: snapshots = [] } =
-            await chrome.storage.local.get('entries')
+            await browser.storage.local.get('entries')
         const selectedSnapshotsArray = snapshots.filter((e) =>
             selectedSnapshots.has(e.id)
         )
@@ -246,7 +248,7 @@ export function initializeSnapshotsTab() {
     if (selectAllCheckbox) {
         selectAllCheckbox.addEventListener('click', async () => {
             const { entries: snapshots = [] } =
-                await chrome.storage.local.get('entries')
+                await browser.storage.local.get('entries')
             const filterText = document
                 .getElementById('filterInput')
                 .value.toLowerCase()
@@ -371,7 +373,7 @@ export function initializeSnapshotsTab() {
     // Modify existing renderSnapshots function
     async function renderSnapshots() {
         const { entries: snapshots = [] } =
-            await chrome.storage.local.get('entries')
+            await browser.storage.local.get('entries')
         const archivebox_server_url = await getArchiveBoxServerUrl()
 
         const filterText = document
@@ -521,7 +523,7 @@ export function initializeSnapshotsTab() {
         .getElementById('downloadCsv')
         .addEventListener('click', async () => {
             const { entries: snapshots = [] } =
-                await chrome.storage.local.get('entries')
+                await browser.storage.local.get('entries')
             const selectedItems = snapshots.filter((e) =>
                 selectedSnapshots.has(e.id)
             )
@@ -539,7 +541,7 @@ export function initializeSnapshotsTab() {
         .getElementById('downloadJson')
         .addEventListener('click', async () => {
             const { entries: snapshots = [] } =
-                await chrome.storage.local.get('entries')
+                await browser.storage.local.get('entries')
             const selectedItems = snapshots.filter((e) =>
                 selectedSnapshots.has(e.id)
             )
@@ -557,7 +559,7 @@ export function initializeSnapshotsTab() {
         .getElementById('deleteFiltered')
         .addEventListener('click', async () => {
             const { entries: snapshots = [] } =
-                await chrome.storage.local.get('entries')
+                await browser.storage.local.get('entries')
             const selectedItems = snapshots.filter((e) =>
                 selectedSnapshots.has(e.id)
             )
@@ -578,7 +580,7 @@ export function initializeSnapshotsTab() {
             const remainingSnapshots = snapshots.filter(
                 (e) => !idsToDelete.has(e.id)
             )
-            await chrome.storage.local.set({ entries: remainingSnapshots })
+            await browser.storage.local.set({ entries: remainingSnapshots })
 
             // Refresh the view
             await renderSnapshots()
@@ -589,7 +591,7 @@ export function initializeSnapshotsTab() {
         .getElementById('syncFiltered')
         .addEventListener('click', async () => {
             const { entries: snapshots = [] } =
-                await chrome.storage.local.get('entries')
+                await browser.storage.local.get('entries')
             const selectedItems = snapshots.filter((e) =>
                 selectedSnapshots.has(e.id)
             )

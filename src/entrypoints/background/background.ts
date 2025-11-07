@@ -1,4 +1,5 @@
-import { Snapshot, addToArchiveBox } from './utils.js'
+import browser from 'webextension-polyfill'
+import { Snapshot, addToArchiveBox } from '../../utils.js'
 
 // Checks if URL should be auto-archived based on regex patterns and configuration settings.
 async function shouldAutoArchive(url) {
@@ -9,7 +10,7 @@ async function shouldAutoArchive(url) {
             enable_auto_archive = false,
             match_urls = [],
             exclude_urls = [],
-        } = await chrome.storage.local.get([
+        } = await browser.storage.local.get([
             'enable_auto_archive',
             'match_urls',
             'exclude_urls',
@@ -76,7 +77,7 @@ async function autoArchive(tabId, changeInfo, tab) {
 
         // Check if URL is already archived locally
         const { entries: snapshots = [] } =
-            await chrome.storage.local.get('entries')
+            await browser.storage.local.get('entries')
         const isAlreadyArchived = snapshots.some((s) => s.url === tab.url)
 
         if (isAlreadyArchived) {
@@ -105,7 +106,7 @@ async function autoArchive(tabId, changeInfo, tab) {
                 '[Auto-Archive Debug] Created new snapshot, saving to storage'
             )
             snapshots.push(snapshot)
-            await chrome.storage.local.set({ entries: snapshots })
+            await browser.storage.local.set({ entries: snapshots })
             console.debug(
                 '[Auto-Archive Debug] Snapshot saved to local storage'
             )
@@ -131,7 +132,7 @@ async function autoArchive(tabId, changeInfo, tab) {
 async function configureAutoArchiving() {
     console.debug('[Auto-Archive Debug] Setting up auto-archiving...')
 
-    const hasPermission = await chrome.permissions.contains({
+    const hasPermission = await browser.permissions.contains({
         permissions: ['tabs'],
     })
     console.debug(`[Auto-Archive Debug] Has tabs permission: ${hasPermission}`)
@@ -141,22 +142,22 @@ async function configureAutoArchiving() {
         return
     }
 
-    const { enable_auto_archive = false } = await chrome.storage.local.get([
+    const { enable_auto_archive = false } = await browser.storage.local.get([
         'enable_auto_archive',
     ])
     console.debug(
         `[Auto-Archive Debug] enable_auto_archive setting: ${enable_auto_archive}`
     )
 
-    const hasListener = chrome.tabs.onUpdated.hasListener(autoArchive)
+    const hasListener = browser.tabs.onUpdated.hasListener(autoArchive)
     if (enable_auto_archive) {
         if (!hasListener) {
-            chrome.tabs.onUpdated.addListener(autoArchive)
+            browser.tabs.onUpdated.addListener(autoArchive)
         }
         console.log('Auto-archiving enabled')
     } else {
         if (hasListener) {
-            chrome.tabs.onUpdated.removeListener(autoArchive)
+            browser.tabs.onUpdated.removeListener(autoArchive)
         }
         console.log('Auto-archiving disabled')
     }
@@ -166,13 +167,13 @@ async function configureAutoArchiving() {
 configureAutoArchiving()
 
 // Listen for changes to the auto-archive setting
-chrome.storage.onChanged.addListener((changes, area) => {
+browser.storage.onChanged.addListener((changes, area) => {
     if (area === 'local' && changes.enable_auto_archive) {
         configureAutoArchiving()
     }
 })
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'archivebox_add') {
         try {
             const { urls = [], tags = [] } = JSON.parse(message.body)
@@ -197,34 +198,34 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true
 })
 
-chrome.runtime.onMessage.addListener(async (message) => {
+browser.runtime.onMessage.addListener(async (message) => {
     const options_url =
-        chrome.runtime.getURL('options.html') + `?search=${message.id}`
+        browser.runtime.getURL('options.html') + `?search=${message.id}`
     console.log('i ArchiveBox Collector showing options.html', options_url)
     if (message.action === 'openOptionsPage') {
-        await chrome.tabs.create({ url: options_url })
+        await browser.tabs.create({ url: options_url })
     }
 })
 
-chrome.runtime.onInstalled.addListener(function () {
-    chrome.contextMenus.removeAll()
-    chrome.contextMenus.create({
+browser.runtime.onInstalled.addListener(function () {
+    browser.contextMenus.removeAll()
+    browser.contextMenus.create({
         id: 'save_to_archivebox_ctxmenu',
         title: 'Save to ArchiveBox',
     })
 })
 
 // Context menu button
-chrome.contextMenus.onClicked.addListener((item, tab) =>
-    chrome.scripting.executeScript({
+browser.contextMenus.onClicked.addListener((item, tab) =>
+    browser.scripting.executeScript({
         target: { tabId: tab.id },
         files: ['popup.js'],
     })
 )
 
 // Toolbar button
-chrome.action.onClicked.addListener((tab) => {
-    chrome.scripting.executeScript({
+browser.action.onClicked.addListener((tab) => {
+    browser.scripting.executeScript({
         target: { tabId: tab.id },
         files: ['popup.js'],
     })

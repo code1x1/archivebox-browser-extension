@@ -1,4 +1,5 @@
 // Config tab initialization and handlers
+import browser from 'webextension-polyfill'
 
 import {
     Snapshot,
@@ -21,7 +22,7 @@ export async function initializeConfigTab() {
         match_urls = '',
         exclude_urls = '',
         enable_auto_archive = false,
-    } = await chrome.storage.local.get([
+    } = await browser.storage.local.get([
         'archivebox_api_key',
         'match_urls',
         'exclude_urls',
@@ -37,11 +38,11 @@ export async function initializeConfigTab() {
     )
 
     // Migrate old config_archiveboxBaseUrl to archivebox_server_url
-    const { config_archiveBoxBaseUrl } = await chrome.storage.sync.get(
+    const { config_archiveBoxBaseUrl } = await browser.storage.sync.get(
         'config_archiveboxBaseUrl'
     )
     if (config_archiveBoxBaseUrl) {
-        await chrome.storage.local.set({
+        await browser.storage.local.set({
             archivebox_server_url: config_archiveBoxBaseUrl,
         })
     }
@@ -63,7 +64,7 @@ export async function initializeConfigTab() {
             const statusText = document.getElementById('serverStatusText')
 
             // Check if we have permission to access the server
-            const permission = await chrome.permissions.request({
+            const permission = await browser.permissions.request({
                 permissions: ['cookies'],
                 origins: [`${serverUrl.value}/*`],
             })
@@ -196,7 +197,7 @@ export async function initializeConfigTab() {
     // Special handler for the auto-archive toggle
     autoArchiveCheckbox.addEventListener('change', async () => {
         if (autoArchiveCheckbox.checked) {
-            const granted = await chrome.permissions.request({
+            const granted = await browser.permissions.request({
                 permissions: ['tabs'],
             })
             if (!granted) {
@@ -207,7 +208,7 @@ export async function initializeConfigTab() {
             }
         }
 
-        await chrome.storage.local.set({
+        await browser.storage.local.set({
             enable_auto_archive: autoArchiveCheckbox.checked,
         })
     })
@@ -215,7 +216,7 @@ export async function initializeConfigTab() {
     // Other inputs
     ;[serverUrl, apiKey, matchUrls, excludeUrls].forEach((input) => {
         input.addEventListener('change', async () => {
-            await chrome.storage.local.set({
+            await browser.storage.local.set({
                 archivebox_server_url: serverUrl.value.replace(/\/$/, ''),
                 archivebox_api_key: apiKey.value.trim(),
                 match_urls: matchUrls.value,

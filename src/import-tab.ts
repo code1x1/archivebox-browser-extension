@@ -1,9 +1,11 @@
+import browser from 'webextension-polyfill'
+
 let importItems = []
 let existingUrls = new Set()
 
 export async function initializeImport() {
     const { entries: snapshots = [] } =
-        await chrome.storage.local.get('entries')
+        await browser.storage.local.get('entries')
     existingUrls = new Set(snapshots.map((e) => e.url))
 
     // Set default dates for history
@@ -43,7 +45,7 @@ export async function initializeImport() {
 
 async function loadHistory() {
     // request permission to access history
-    const permission = await chrome.permissions.request({
+    const permission = await browser.permissions.request({
         permissions: ['history'],
     })
     if (!permission) {
@@ -63,7 +65,7 @@ async function loadHistory() {
     }
 
     const maxResults = 10000
-    const historyItems = await chrome.history.search({
+    const historyItems = await browser.history.search({
         text: '',
         startTime: startDate.getTime(),
         endTime: endDate.getTime(),
@@ -83,7 +85,7 @@ async function loadHistory() {
 
 async function loadBookmarks() {
     // request permission to access bookmarks
-    const permission = await chrome.permissions.request({
+    const permission = await browser.permissions.request({
         permissions: ['bookmarks'],
     })
     if (!permission) {
@@ -110,7 +112,7 @@ async function loadBookmarks() {
         return items
     }
 
-    const tree = await chrome.bookmarks.getTree()
+    const tree = await browser.bookmarks.getTree()
     importItems = processBookmarkTree(tree)
     renderImportItems()
 }
@@ -215,7 +217,7 @@ async function importSelected() {
         .filter((tag) => tag)
 
     const { entries: snapshots = [] } =
-        await chrome.storage.local.get('entries')
+        await browser.storage.local.get('entries')
 
     const newSnapshots = selectedItems.map((item) => ({
         id: crypto.randomUUID(),
@@ -226,7 +228,7 @@ async function importSelected() {
     }))
 
     snapshots.push(...newSnapshots)
-    await chrome.storage.local.set({ entries: snapshots })
+    await browser.storage.local.set({ entries: snapshots })
 
     // Update existingUrls
     newSnapshots.forEach((snapshot) => existingUrls.add(snapshot.url))

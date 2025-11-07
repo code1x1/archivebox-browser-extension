@@ -1,4 +1,6 @@
 // Common utility functions
+import browser from 'webextension-polyfill'
+import z from 'zod'
 
 export class Snapshot {
     constructor(
@@ -12,13 +14,17 @@ export class Snapshot {
 }
 
 // Helper to get server URL with fallback to legacy config name
-export async function getArchiveBoxServerUrl() {
-    const { archivebox_server_url } = await chrome.storage.local.get([
-        'archivebox_server_url',
-    ]) // new ArchiveBox Extension v2.1.3 location
-    const { config_archiveBoxBaseUrl } = await chrome.storage.sync.get([
+export async function getArchiveBoxServerUrl(): Promise<string> {
+    const { archivebox_server_url } = await browserStorageLocalGet(
+        'archivebox_server_url'
+    , z.object({
+        archivebox_server_url: z.string().nullable()
+    })) // new ArchiveBox Extension v2.1.3 location
+    const { config_archiveBoxBaseUrl } = await browserStorageLocalGet(
         'config_archiveBoxBaseUrl',
-    ]) // old ArchiveBox Exporter v1.3.1 location
+    z.object({
+        config_archiveBoxBaseUrl: z.string().nullable()
+    })) // old ArchiveBox Exporter v1.3.1 location
     return archivebox_server_url || config_archiveBoxBaseUrl || ''
 }
 
@@ -81,7 +87,7 @@ export async function addToArchiveBox(
     console.log(`i Adding urls ${urls} and tags ${formattedTags} to ArchiveBox`)
 
     const archivebox_server_url = await getArchiveBoxServerUrl()
-    const { archivebox_api_key } = await chrome.storage.local.get([
+    const { archivebox_api_key } = await browser.storage.local.get([
         'archivebox_api_key',
     ])
 
@@ -188,3 +194,19 @@ export function downloadJson(snapshots) {
     link.click()
     document.body.removeChild(link)
 }
+
+export async function browserStorageLocalGet<
+    Output,
+    Input,
+>(
+    key: string,
+    schema: z.ZodSchema<Output, Input>
+): Promise<z.infer<typeof schema>> {
+    const data = await browser.storage.local.get(key)
+
+    const result = await schema.safeParseAsync(data)
+    if (result.success) {
+        return result.data
+    }
+}
+

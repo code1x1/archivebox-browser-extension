@@ -1,6 +1,6 @@
 import { createPortal } from 'preact/compat'
 import { useState } from 'preact/hooks'
-import { app } from '../../utils/html'
+import { app } from '../../../utils/html'
 
 export function TagsModal() {
     const [open, setOpen] = useState(false)

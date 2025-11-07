@@ -1,3 +1,6 @@
+import browser from 'webextension-polyfill'
+import '../style/style.scss'
+
 class Snapshot {
     constructor(url, tags = [], title = '', favIconUrl = null) {
         this.id = crypto.randomUUID()
@@ -32,7 +35,7 @@ document.addEventListener('keydown', (e) => {
 
 async function getAllTags() {
     const { entries: snapshots = [] } =
-        await chrome.storage.local.get('entries')
+        await browser.storage.local.get('entries')
     return [...new Set(snapshots.flatMap((snapshot) => snapshot.tags))].sort(
         (a, b) => a.toLowerCase().localeCompare(b.toLowerCase())
     )
@@ -45,7 +48,7 @@ async function sendToArchiveBox(url, tags) {
     try {
         console.log('i Sending to ArchiveBox', { url, tags })
         await new Promise((resolve, reject) => {
-            chrome.runtime.sendMessage(
+            browser.runtime.sendMessage(
                 {
                     type: 'archivebox_add',
                     body: JSON.stringify({
@@ -79,7 +82,7 @@ async function sendToArchiveBox(url, tags) {
 
 window.getCurrentSnapshot = async function () {
     const { entries: snapshots = [] } =
-        await chrome.storage.local.get('entries')
+        await browser.storage.local.get('entries')
     let current_snapshot = snapshots.find(
         (snapshot) => snapshot.url === window.location.href
     )
@@ -91,7 +94,7 @@ window.getCurrentSnapshot = async function () {
             document.title
         )
         snapshots.push(current_snapshot)
-        await chrome.storage.local.set({ entries: snapshots })
+        await browser.storage.local.set({ entries: snapshots })
     }
 
     console.log('i Loaded current ArchiveBox snapshot', current_snapshot)
@@ -154,7 +157,7 @@ window.updateCurrentTags = async function () {
                     current_snapshot.tags = current_snapshot.tags.filter(
                         (tag) => tag !== tag_to_remove
                     )
-                    await chrome.storage.local.set({ entries: snapshots })
+                    await browser.storage.local.set({ entries: snapshots })
                     await updateCurrentTags()
                     await updateSuggestions()
                 }
@@ -441,7 +444,7 @@ window.createPopup = async function () {
     // Add message passing for options link
     popup.querySelector('.options-link').addEventListener('click', (e) => {
         e.preventDefault()
-        chrome.runtime.sendMessage({
+        browser.runtime.sendMessage({
             action: 'openOptionsPage',
             id: current_snapshot.id,
         })
@@ -464,7 +467,7 @@ window.createPopup = async function () {
             const tag = e.target.textContent.replace(' +', '')
             if (!current_snapshot.tags.includes(tag)) {
                 current_snapshot.tags.push(tag)
-                await chrome.storage.local.set({ entries: snapshots })
+                await browser.storage.local.set({ entries: snapshots })
                 await updateCurrentTags()
                 await updateSuggestions()
             }
@@ -478,7 +481,7 @@ window.createPopup = async function () {
             current_snapshot.tags = current_snapshot.tags.filter(
                 (t) => t !== tag
             )
-            await chrome.storage.local.set({ entries: snapshots })
+            await browser.storage.local.set({ entries: snapshots })
             await updateCurrentTags()
             await updateSuggestions()
         }
@@ -553,7 +556,7 @@ window.createPopup = async function () {
                 const newTag = input.value.trim()
                 if (!current_snapshot.tags.includes(newTag)) {
                     current_snapshot.tags.push(newTag)
-                    await chrome.storage.local.set({ entries: snapshots })
+                    await browser.storage.local.set({ entries: snapshots })
                     input.value = ''
                     await updateCurrentTags()
                     await updateSuggestions()
@@ -586,7 +589,7 @@ window.createPopup = async function () {
                         await getCurrentSnapshot()
                     if (!current_snapshot.tags.includes(selectedTag)) {
                         current_snapshot.tags.push(selectedTag)
-                        await chrome.storage.local.set({ entries: snapshots })
+                        await browser.storage.local.set({ entries: snapshots })
                     }
                     input.value = ''
                     dropdownContainer.style.display = 'none'
@@ -615,7 +618,7 @@ window.createPopup = async function () {
             const { current_snapshot, snapshots } = await getCurrentSnapshot()
             if (!current_snapshot.tags.includes(selectedTag)) {
                 current_snapshot.tags.push(selectedTag)
-                await chrome.storage.local.set({ entries: snapshots })
+                await browser.storage.local.set({ entries: snapshots })
             }
             input.value = ''
             dropdownContainer.style.display = 'none'
@@ -695,3 +698,5 @@ window.createPopup = async function () {
 }
 
 window.createPopup()
+
+console.log("Hello");
